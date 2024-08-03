@@ -1,0 +1,159 @@
+\documentclass[letterpaper,twocolumn,10pt]{article}
+\usepackage{usenix2019_v3}
+\usepackage[top=1.2in, left=1.2in, bottom=1.2in, right=1.2in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+
+% to be able to draw some self-contained figs
+\usepackage{tikz}
+\usepackage{amsmath}
+
+% inlined bib file
+\usepackage{filecontents}
+
+%-------------------------------------------------------------------------------
+\begin{filecontents}{\jobname.bib}
+%-------------------------------------------------------------------------------
+@Book{arpachiDusseau18:osbook,
+  author =       {Arpaci-Dusseau, Remzi H. and Arpaci-Dusseau Andrea C.},
+  title =        {Operating Systems: Three Easy Pieces},
+  publisher =    {Arpaci-Dusseau Books, LLC},
+  year =         2015,
+  edition =      {1.00},
+  note =         {\url{http://pages.cs.wisc.edu/~remzi/OSTEP/}}
+}
+@InProceedings{waldspurger02,
+  author =       {Waldspurger, Carl A.},
+  title =        {Memory resource management in {VMware ESX} server},
+  booktitle =    {USENIX Symposium on Operating System Design and
+                  Implementation (OSDI)},
+  year =         2002,
+  pages =        {181--194},
+  note =         {\url{https://www.usenix.org/legacy/event/osdi02/tech/waldspurger/waldspurger.pdf}}}
+\end{filecontents}
+
+%-------------------------------------------------------------------------------
+\begin{document}
+%-------------------------------------------------------------------------------
+
+%don't want date printed
+\date{}
+
+% make title bold and 14 pt font (Latex default is non-bold, 16 pt)
+\title{\Large \bf CS 131 Homework 6. Languages for Faster Text Searching}
+
+%for single author (just remove % characters)
+\author{
+{Ken Deng}\\
+UCLA
+% copy the following lines to add more authors
+% \and
+% {\rm Name}\\
+%Name Institution
+} % end author
+
+\maketitle
+
+%-------------------------------------------------------------------------------
+\section{Introduction}
+%-------------------------------------------------------------------------------
+Rust is a modern systems programming language designed to provide high performance and memory safety without compromising on concurrency. Known for its unique ownership system, Rust eliminates common bugs such as null pointer dereferencing and buffer overflows, ensuring memory safety at compile time. This makes it particularly suitable for applications handling large datasets, like Dudelsack’s log file searches.
+%-------------------------------------------------------------------------------
+\section{Evaluate Rust Platform}
+%-------------------------------------------------------------------------------
+\noindent \textbf{Language Overview}: Rust is a systems programming language that emphasizes performance, safety, and concurrency. It was designed to overcome the limitations of traditional systems languages like C and C++ by offering memory safety without a garbage collector, and concurrent programming without data races. These features make Rust a compelling choice for developing high-performance applications that require robust error handling and safe concurrency.
+
+\noindent \textbf{Performance and Memory Safety}: Rust’s ownership system ensures memory safety by enforcing strict rules on how memory is accessed and managed. This system prevents common bugs such as null pointer dereferencing and buffer overflows, which are critical when handling large datasets. Rust achieves this without a runtime garbage collector, allowing for predictable performance, which is essential for high-speed data processing tasks like log file searches.
+
+\noindent \textbf{Concurrency Model}: Rust provides excellent support for concurrent programming, which is a key requirement for parallelizing log file searches. The language includes native concurrency primitives such as threads and channels, and it prevents data races at compile time through its ownership and borrowing rules. Libraries like rayon make it easy to parallelize operations with minimal effort, providing high-level abstractions for data parallelism that can be utilized to split the search workload across multiple threads.
+
+\noindent \textbf{Ecosystem and Tooling}: Rust’s ecosystem is mature and includes a rich set of libraries and tools that support various aspects of software development:\\
+     		\phantom{aaaa} \textbf{Cargo}: The built-in package manager and build system that simplifies dependency management and project building.\\
+     		\phantom{aaaa} \textbf{Crates.io}: The official package registry, which hosts a vast collection of libraries (crates) that can be easily integrated into projects.\\
+		\phantom{aaaa} \textbf{Regex}: A powerful regular expression library that can be used for implementing the search functionality.\\
+		\phantom{aaaa} \textbf{Rayon}: A data parallelism library that simplifies parallel iteration over collections, making it easier to implement parallel log file searches.
+	
+\noindent \textbf{Documentation and Community Support}: Rust has extensive and well-organized documentation, including the official Rust Book, which serves as a comprehensive guide to learning the language. The community is active and supportive, offering numerous resources such as forums, chat rooms, and online tutorials. This strong community support can be invaluable for troubleshooting and optimizing the application during development.
+
+\noindent \textbf{System Integration}: Rust integrates well with existing systems and tools. It can interoperate with C and C++ code through its Foreign Function Interface (FFI), allowing for seamless integration with existing codebases and libraries. This flexibility ensures that Rust can be used alongside other technologies, making it a versatile choice for extending or enhancing current systems.
+
+\noindent \textbf{Effectiveness for the Proposed Application}: Based on the examination of Rust’s features and ecosystem, the language is well-suited for developing a parallelized version of grep for log file searches. Rust’s performance and memory safety characteristics ensure that the application will be efficient and reliable. Its robust concurrency model allows for effective parallel processing, significantly reducing search times. The mature ecosystem and strong community support further enhance its viability as a platform for this application.
+
+%-------------------------------------------------------------------------------
+\section{Strengths and Weaknesses}
+%-------------------------------------------------------------------------------
+
+{\it{\textbf{Strengths}}}:
+
+\noindent \textbf{Memory Safety}:
+
+Rust: Ensures memory safety through its ownership system, preventing common bugs such as null pointer dereferencing and buffer overflows. This leads to a more stable and secure implementation of grep.
+
+GNU grep: Written in C, which lacks inherent memory safety features, making it prone to memory-related bugs.
+
+\noindent \textbf{Concurrency}:
+
+Rust: Provides robust concurrency support with native threads and async programming, preventing data races at compile time. This reduces search times by distributing workload across multiple threads.
+
+GNU grep: Primarily sequential, with limited support for parallel processing.
+
+\noindent \textbf{Performance}:
+
+Rust: Comparable to C in terms of performance, with fine-grained control over system resources. Besides, Rust is likely to have better performance through parallelization, making searches faster for large datasets.
+
+GNU grep: Highly optimized for performance, but limited by sequential processing.
+
+\noindent \textbf{Ecosystem and Libraries}:
+
+Rust: Features libraries like regex for regular expressions and rayon for data parallelism, simplifying the implementation of parallel searches.
+
+GNU grep: Utilizes POSIX regular expressions and optimized C code, but lacks built-in parallel processing support.
+
+\noindent \textbf{Error Handling and Reliability}:
+
+Rust: Promotes explicit error handling with Result and Option types, reducing the likelihood of runtime errors, which enhances reliability and maintainability.
+
+GNU grep: Uses traditional error handling in C, which can be less predictable and harder to manage.\\
+
+{\it{\textbf{Weaknesses}}}:
+
+\noindent \textbf{Learning Curve}:
+
+Rust: The ownership model and borrowing rules can be challenging for developers new to Rust, which would slow down initial development and require additional training.
+
+GNU grep: Written in C, a language familiar to many system programmers.
+
+\noindent \textbf{Ecosystem Maturity}:
+
+Rust: While growing, the ecosystem might not yet have all the mature libraries and tools available in C.
+
+GNU grep: Benefits from decades of optimization and a mature ecosystem.
+
+\noindent \textbf{Tooling and Debugging}:
+
+Rust: Tooling is robust but may lack some advanced features compared to mature C tools. Also, Developers might find debugging and profiling Rust code less familiar and potentially more time-consuming.
+
+GNU grep: Extensive tools and debugging options are available for C.
+
+\noindent \textbf{Compile Times}:
+
+Rust: Generally has longer compile times compared to C, particularly in large-scale projects.
+
+GNU grep: Fast compilation due to the simplicity and maturity of the C language.
+
+%-------------------------------------------------------------------------------
+\section{Conclusion}
+%-------------------------------------------------------------------------------
+\noindent Rust’s unique features, including memory safety, robust concurrency support, and high performance, make it a compelling choice for this application. The language’s strong ecosystem, combined with its emphasis on explicit error handling, ensures both reliability and maintainability.\\
+
+\noindent While Rust presents some initial challenges, such as a steep learning curve and longer compile times, its long-term benefits in terms of performance and security outweigh these drawbacks. By leveraging Rust’s capabilities, Dudelsack can significantly reduce search times for large datasets, ensuring faster and more reliable log file processing.\\
+
+\noindent Overall, Rust emerges as a powerful and effective platform for implementing a parallelized grep, promising substantial improvements in efficiency and stability for Dudelsack’s data analytics operations.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%  LocalWords:  endnotes includegraphics fread ptr nobj noindent
+%%  LocalWords:  pdflatex acks

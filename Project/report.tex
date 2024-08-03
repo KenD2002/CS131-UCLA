@@ -1,0 +1,238 @@
+\documentclass[letterpaper,twocolumn,10pt]{article}
+\usepackage{usenix2019_v3}
+\usepackage[top=1in, left=1.2in, bottom=1.2in, right=1.2in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{ragged2e}
+
+% to be able to draw some self-contained figs
+\usepackage{tikz}
+\usepackage{amsmath}
+
+% inlined bib file
+\usepackage{filecontents}
+
+%-------------------------------------------------------------------------------
+\begin{filecontents}{\jobname.bib}
+%-------------------------------------------------------------------------------
+@Book{arpachiDusseau18:osbook,
+  author =       {Arpaci-Dusseau, Remzi H. and Arpaci-Dusseau Andrea C.},
+  title =        {Operating Systems: Three Easy Pieces},
+  publisher =    {Arpaci-Dusseau Books, LLC},
+  year =         2015,
+  edition =      {1.00},
+  note =         {\url{http://pages.cs.wisc.edu/~remzi/OSTEP/}}
+}
+@InProceedings{waldspurger02,
+  author =       {Waldspurger, Carl A.},
+  title =        {Memory resource management in {VMware ESX} server},
+  booktitle =    {USENIX Symposium on Operating System Design and
+                  Implementation (OSDI)},
+  year =         2002,
+  pages =        {181--194},
+  note =         {\url{https://www.usenix.org/legacy/event/osdi02/tech/waldspurger/waldspurger.pdf}}}
+\end{filecontents}
+
+%-------------------------------------------------------------------------------
+\begin{document}
+%-------------------------------------------------------------------------------
+
+%don't want date printed
+\date{}
+
+% make title bold and 14 pt font (Latex default is non-bold, 16 pt)
+\title{\Large \bf CS 131 Project. Java Shared Memory Performance Races}
+
+%for single author (just remove % characters)
+\author{
+{Ken Deng}\\
+UCLA
+% copy the following lines to add more authors
+% \and
+% {\rm Name}\\
+%Name Institution
+} % end author
+
+\maketitle
+
+%-------------------------------------------------------------------------------
+\begin{abstract}
+%-------------------------------------------------------------------------------
+This report explores the feasibility of utilizing Python's asyncio library for developing an application server herd designed to handle high-frequency updates and diverse protocol access for a news service. The investigation includes an in-depth review of asyncio's source code and documentation, alongside a prototype implementation comprising multiple interconnected servers. Key factors such as ease of development, maintainability, performance considerations, and integration challenges are thoroughly analyzed. Comparative evaluations with a Java-based approach and Node.js are provided to offer a comprehensive assessment. Recommendations are made based on findings, addressing concerns related to type checking, memory management, and multithreading within Python's asyncio framework.
+\end{abstract}
+%-------------------------------------------------------------------------------
+\section{Introduction}
+%-------------------------------------------------------------------------------
+The Wikimedia infrastructure, which powers Wikipedia and related platforms, is built on a robust and reliable technology stack comprising Debian GNU/Linux, Apache, NGINX, Memcached, MariaDB, Elasticsearch, Swift, and core application code written in PHP and JavaScript. This architecture, featuring multiple redundant servers and caching proxies, ensures high performance and reliability. However, when adapting this infrastructure to a news service, which demands more frequent updates, diverse protocol access, and mobile client support, the current PHP+JavaScript server architecture may present significant bottlenecks.
+\vspace{5pt}
+
+\noindent{}In response to these challenges, the concept of an "application server herd" is proposed. This architecture allows multiple application servers to communicate directly with each other as well as through a core database and caches. Such an arrangement is designed to handle rapidly evolving data, like GPS-based locations and ephemeral video data, while utilizing the database server for more stable and less frequently accessed information. The server herd architecture aims to distribute the load more effectively, reduce latency, and enhance scalability.
+\vspace{5pt}
+
+\noindent{}Python's asyncio library emerges as a potential solution for managing this server herd. asyncio provides an event-driven programming model that supports asynchronous I/O operations, enabling tasks to execute concurrently without blocking the main thread. This non-blocking nature can significantly improve the efficiency of handling frequent updates and interserver communications by reducing latency and increasing throughput. Moreover, asyncio simplifies the development of scalable network applications through the use of coroutines and event loops.
+\vspace{5pt}
+
+\noindent{}Nevertheless, it is essential to thoroughly investigate both the advantages and potential drawbacks of using asyncio. Concerns such as Python's type checking, memory management, and multithreading capabilities must be carefully examined to ensure the application's reliability and maintainability. By developing a prototype of a server herd and evaluating its performance and integration challenges, this study aims to provide a comprehensive assessment of asyncio's suitability for building a high-frequency news service. This investigation is critical for informing architectural decisions in modern web services that require robust, scalable, and efficient server management.
+
+%-------------------------------------------------------------------------------
+\section{Project Implementation}
+%-------------------------------------------------------------------------------
+\subsection{Server Settings}
+%-------------------------------------------------------------------------------
+\noindent{}The implementation for this research consists of five interconnected servers, each identified by unique names: Bailey, Bona, Campbell, Clark, and Jaquez. These servers are configured to communicate in a predefined pattern, ensuring robust interconnectivity. The servers can accept TCP connections, process location updates, respond to queries, and propagate information across the network. This setup tests asyncio's efficiency in managing frequent updates and ensuring seamless communication among multiple servers. Besides, Google API "places" is used for generating a Nearby Search request. This implementation includes three python source code files: settings.py, server.py, and client.py.
+
+%-------------------------------------------------------------------------------
+\subsection{setting.py Implementation}
+%-------------------------------------------------------------------------------
+\noindent{}This python file defines the global settings for the whole project: local host ip, Google "places" API key, relationship between servers, and assigned port numbers for the five servers.
+
+%-------------------------------------------------------------------------------
+\subsection{server.py Implementation}
+%-------------------------------------------------------------------------------
+\noindent{}The server implementation starts with the initialization of the Server class, which sets up necessary parameters, including port numbers and server names, and creates a dictionary to store client information. Logs are maintained in a dedicated directory, ensuring detailed tracking of server activities. The server listens for incoming connections and processes client messages, updating client information and propagating updates to other servers. Error handling is robust, with methods to validate input and log activities effectively.
+\vspace{5pt}
+
+\noindent{}The server’s main functions include handling client connections, processing incoming messages, updating client information, and ensuring consistent data propagation across the server network. These functions leverage asyncio’s event-driven capabilities to manage high-frequency updates efficiently.
+
+%-------------------------------------------------------------------------------
+\subsection{client.py Implementation}
+%-------------------------------------------------------------------------------
+\noindent{}The client implementation involves initializing the Client class, setting up the connection parameters, and maintaining detailed logs of client-server interactions. The client connects to the server, sends messages, and logs all activities. Methods for logging and error handling ensure reliable communication. The client continuously reads user input, sending messages to the server and handling responses asynchronously, providing a smooth and efficient communication process.
+
+%-------------------------------------------------------------------------------
+\subsection{Processing IAMAT}
+%-------------------------------------------------------------------------------
+\noindent{}The IAMAT command allows clients to update the server with their current location and the time at which they were at that location. A client sends a message formatted as IAMAT $<$client\_id$> <$latitude$><$longitude$> <$timestamp$>$. Upon receiving this message, the server processes it by first validating the format of the coordinates and the timestamp. The server then calculates the time difference between the current time and the provided timestamp. This time difference is essential for synchronizing updates across the server herd. The server updates its client information database with the new location data and constructs an AT message, including its server ID, the calculated time difference, the client ID, coordinates, and the timestamp. This response is sent back to the client, confirming the receipt and processing of the location update.
+
+%-------------------------------------------------------------------------------
+\subsection{Processing AT}
+%-------------------------------------------------------------------------------
+\noindent{}The AT command is used by servers to propagate location updates received from clients across the server herd. When a server receives an IAMAT message, it constructs an AT message and disseminates it to its neighboring servers. This message includes the server ID, time difference, client ID, coordinates, and timestamp, ensuring that all servers in the network are updated with the most recent location data of the client. Each server that receives the AT message updates its own records and further propagates the message to its neighbors, maintaining consistency across the network. This mechanism allows the server herd to handle rapidly changing data effectively, ensuring that each server has the latest information without needing to frequently query a central database.
+
+%-------------------------------------------------------------------------------
+\subsection{Processing WHATSAT}
+%-------------------------------------------------------------------------------
+\noindent{}The WHATSAT command allows clients to query information about points of interest near a specific client's location. The command is formatted as WHATSAT $<$client\_id$><$radius$> <$num\_places$>$. Upon receiving this query, the server first validates the client ID to ensure it is recognized and checks the radius and number of places parameters to confirm they fall within acceptable ranges (0-50 km for radius and 0-20 for num\_places). The server then retrieves the latest known location of the specified client from its database. Using this location, the server makes a request to the Google Places API to fetch nearby places within the specified radius. The server formats the response by including the original AT message and the retrieved places information, and then sends it back to the querying client. This ensures that clients receive accurate and up-to-date location-based information promptly.
+
+%-------------------------------------------------------------------------------
+\section{Python Versus Java}
+%-------------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
+\subsection{Type Checking}
+%-------------------------------------------------------------------------------
+\noindent{}Type checking in Python is dynamic, meaning types are verified at runtime. This flexibility allows for faster code writing without strict type definitions, beneficial in a rapidly changing environment like a news application server herd. However, dynamic type checking can lead to runtime errors that are harder to detect and debug, posing issues in complex systems. In contrast, Java employs static type checking, verifying types at compile time. This ensures early detection of type errors, enhancing reliability and predictability. For a high-frequency news application server herd, early error detection can reduce runtime failures, improving system stability.
+\vspace{5pt}
+
+\noindent{}For this project, Python's dynamic type checking, while enabling rapid development, poses risks to system stability and performance due to potential runtime errors and lack of enforced type safety. Dynamic typing can also introduce performance overheads from type checks during execution. Conversely, Java’s static type checking offers greater reliability and early error detection, making it a strong candidate for the project. The predictability of static typing enhances robustness, crucial for managing high-frequency updates. Additionally, Java’s strong IDE support improves development efficiency with powerful refactoring tools and error detection, though it may extend development time compared to Python.
+%-------------------------------------------------------------------------------
+\subsection{Memory Management}
+%-------------------------------------------------------------------------------
+\noindent{}Python's memory management uses reference counting combined with a cyclic garbage collector. Reference counting deallocates memory when an object's references drop to zero, but it struggles with circular references, requiring the cyclic garbage collector to handle them. This can lead to performance variability in long-running applications like a high-frequency news server herd.
+\vspace{5pt}
+
+\noindent{}Java employs a generational garbage collection mechanism within the JVM, categorizing objects into young and old generations. Short-lived objects in the young generation are collected frequently, while long-lived objects in the old generation are collected less often. This approach reduces pause times and enhances performance consistency, crucial for a high-frequency news server herd. However, tuning Java's garbage collector can increase development and maintenance complexity.
+\vspace{5pt}
+
+\noindent{}In summary, Python’s memory management is simpler but may cause performance issues in complex applications, while Java’s advanced garbage collection offers better performance and stability, making it more suitable for high-frequency data updates, albeit with higher tuning complexity.
+
+%-------------------------------------------------------------------------------
+\subsection{Multithreading}
+%-------------------------------------------------------------------------------
+\noindent{}Python's multithreading is limited by the Global Interpreter Lock (GIL), which allows only one thread to execute at a time. This restriction makes Python less effective for CPU-bound tasks but suitable for I/O-bound tasks when combined with asyncio. In the context of a high-frequency news server herd, the GIL can hinder performance for tasks requiring significant computation. However, asyncio's event-driven model can effectively manage high-frequency data updates and inter-server communications by handling I/O-bound tasks efficiently.
+\vspace{5pt}
+
+\noindent{}Java, on the other hand, supports true parallel execution of threads on multi-core systems without a GIL, making it well-suited for both CPU-bound and I/O-bound tasks. This capability enhances performance and scalability for concurrent operations, which is beneficial for a high-frequency news server herd. Java’s robust multithreading can handle high-frequency data processing more efficiently, but it also requires careful management to avoid issues such as thread contention and synchronization problems.
+\vspace{5pt}
+
+\noindent{}In summary, Python's multithreading is limited by the GIL, which restricts its effectiveness for CPU-bound tasks but works well for I/O-bound operations with asyncio. Java's multithreading offers superior performance and scalability for concurrent tasks, making it a strong choice for a high-frequency news server herd, despite the increased complexity in managing threads and synchronization.
+
+%-------------------------------------------------------------------------------
+\subsection{Conclusion}
+%-------------------------------------------------------------------------------
+\noindent{}IPython’s dynamic type checking, simple memory management, and effective I/O-bound multithreading with asyncio enable rapid development but come with risks of runtime errors and performance variability. Java’s static type checking, advanced generational garbage collection, and robust multithreading offer greater stability and scalability, though they require more development effort. For a high-frequency news server herd, Python provides flexibility and speed, while Java ensures reliability and consistent performance. The choice depends on prioritizing either rapid development or long-term stability and efficiency.
+
+%-------------------------------------------------------------------------------
+\section{asyncio Versus Node.js}
+%-------------------------------------------------------------------------------
+%-------------------------------------------------------------------------------
+\subsection{Introduction}
+%-------------------------------------------------------------------------------
+Both asyncio and Node.js are frameworks designed for asynchronous programming, crucial for handling high concurrency and non-blocking operations. asyncio, part of Python’s standard library, leverages an event loop and coroutines to manage asynchronous tasks. Node.js, built on Chrome's V8 JavaScript engine, uses an event-driven architecture with callbacks and promises. These features make both frameworks suitable for developing a high-frequency news application server herd that requires managing numerous simultaneous connections and frequent data updates.
+
+%-------------------------------------------------------------------------------
+\subsection{Architecture}
+%-------------------------------------------------------------------------------
+asyncio is built around an event loop that manages tasks using coroutines, which are special functions that can pause and resume execution, allowing other tasks to run concurrently. This non-blocking approach helps manage I/O-bound tasks efficiently. Task management in asyncio involves creating, scheduling, and running tasks in the event loop. Node.js also relies on an event loop but initially used callbacks for asynchronous operations. However, with the introduction of promises and the async/await syntax, Node.js has simplified handling asynchronous code, making it more readable and maintainable. Both frameworks effectively manage asynchronous operations, but asyncio’s structured coroutine approach provides a more readable and maintainable codebase.
+
+%-------------------------------------------------------------------------------
+\subsection{Methods Properties}
+%-------------------------------------------------------------------------------
+Key features of asyncio include the event loop, coroutines, and tasks. The asyncio.run() function starts and manages the event loop, while asyncio.create\_task() schedules a coroutine as a concurrent task. The await keyword pauses the execution of a coroutine until the awaited task is complete. Additionally, asyncio.gather() runs multiple coroutines concurrently, and asyncio.sleep() allows for non-blocking delays. Node.js features include the event loop, callbacks, promises, and the async/await syntax, which simplifies asynchronous code management. Modules like eventEmitter for handling custom events and process.nextTick() for scheduling callbacks further enhance Node.js’s capabilities.
+\vspace{5pt}
+
+\noindent{}Both frameworks offer robust tools for managing asynchronous operations. asyncio’s use of coroutines and the event loop provides a structured approach to concurrency, while Node.js benefits from a mature ecosystem and the flexibility of promises and async/await for managing asynchronous tasks.
+
+%-------------------------------------------------------------------------------
+\subsection{Learning/Dev Cost}
+%-------------------------------------------------------------------------------
+The learning curve for asyncio can be steep, especially for developers new to asynchronous programming. However, its integration with Python and the use of coroutines make writing asynchronous code more straightforward once understood. Node.js, with its async/await syntax, presents a more moderate learning curve. The extensive JavaScript ecosystem and community support also enhance development speed. For developers unfamiliar with asynchronous programming, Node.js might be easier to start with, but asyncio’s structured approach can offer better maintainability for complex asynchronous applications.
+
+%-------------------------------------------------------------------------------
+\subsection{Performance}
+%-------------------------------------------------------------------------------
+asyncio excels in managing I/O-bound tasks, making it highly suitable for numerous simultaneous connections and frequent data updates required by a high-frequency news server herd. The event loop and coroutine-based architecture enable efficient, non-blocking I/O operations. Node.js also performs well in I/O-bound scenarios with its non-blocking, event-driven architecture. While both frameworks can handle the project’s asynchronous requirements effectively, asyncio might have limitations with CPU-bound tasks due to Python’s Global Interpreter Lock (GIL), whereas Node.js does not have this constraint.
+
+%-------------------------------------------------------------------------------
+\section{Python Version for asyncio}
+%-------------------------------------------------------------------------------
+Python 3.9 introduced significant enhancements to asyncio, making it a vital upgrade for developing asynchronous applications. One key improvement is the asyncio.run() function, which simplifies running the event loop by providing a straightforward interface for executing asynchronous code. This function reduces setup complexity and potential errors, streamlining the development process.
+\vspace{5pt}
+
+\noindent{}Another crucial addition is asyncio.to\_thread(), allowing I/O-bound functions to run in separate threads without blocking the event loop. This feature maintains the responsiveness of the main event loop, essential for handling high-frequency updates and multiple connections. By offloading I/O tasks to separate threads, performance is significantly improved.
+\vspace{5pt}
+
+\noindent{}Python 3.9 also brought better task management with enhanced cancellation and error handling mechanisms. These improvements ensure tasks can be cleanly cancelled and errors effectively managed, which is critical for maintaining stability in a high-frequency news server herd. Additionally, the removal of the reuse\_address parameter in asyncio.loop.create\_datagram\_endpoint() enhances security by preventing address reuse vulnerabilities.
+\vspace{5pt}
+
+\noindent{}New debugging and logging capabilities in Python 3.9 provide better insights into code behavior, making it easier to diagnose and resolve issues. These features are essential for maintaining the reliability of complex server infrastructure.
+\vspace{5pt}
+
+\noindent{}Overall, using Python 3.9 or later for asyncio is highly recommended due to improvements in task management, performance, security, and debugging capabilities. These enhancements streamline development and ensure the application is robust, secure, and capable of meeting the demands of a modern news server infrastructure.
+
+%-------------------------------------------------------------------------------
+\section{Conclusion}
+%-------------------------------------------------------------------------------
+\noindent{}This report assessed the effectiveness of Python's asyncio for developing a high-frequency news application server herd, focusing on development ease, performance, and integration challenges. We compared Python's asyncio with Java and Node.js to provide a comprehensive evaluation. Python's dynamic type checking and simpler syntax facilitate rapid development but can lead to runtime errors, necessitating thorough testing. Java's static type checking and advanced memory management ensure stability but add complexity. asyncio excels at managing I/O-bound tasks, making it well-suited for our project’s needs, although additional strategies are required for CPU-bound tasks.
+\vspace{5pt}
+
+\noindent{}Upgrading to Python 3.9 or later is strongly recommended due to significant improvements in asyncio, enhancing security, performance, and maintainability. These updates streamline development and improve the robustness of asynchronous operations. Overall, asyncio offers a modern, efficient approach to asynchronous programming, meeting the demands of a high-frequency news application server herd, provided its limitations are carefully addressed.
+
+%-------------------------------------------------------------------------------
+\section{Bibliography}
+%-------------------------------------------------------------------------------
+\RaggedRight{
+\noindent{}\footnotesize {\it{\textbf{Comparing Python to Other Languages}}}. Python.Org, www.python.org/doc/essays/comparisons/. Accessed 7 June 2024. 
+\vspace{5pt}
+
+\noindent{}\footnotesize {\it{\textbf{Multithreading in Python}}}. GeeksforGeeks, www.geeksforgeeks.org/multithreading-python-set-1/. Accessed 7 June 2024. 
+\vspace{5pt}
+
+\noindent{}\footnotesize {\it{\textbf{Multithreading in Java}}}. GeeksforGeeks, https://www.geeksforgeeks.org/multithreading-in-java/. Accessed 7 June 2024. 
+\vspace{5pt}
+
+\noindent{}\footnotesize {\it{\textbf{asyncio — Asynchronous I/O}}}. Python Software Foundation, https://docs.python.org/3/library/asyncio.html/. Accessed 7 June 2024. 
+\vspace{5pt}
+
+\noindent{}\footnotesize {\it{\textbf{What’s New In Python 3.9}}}. Python Software Foundation, https://docs.python.org/3/whatsnew/3.9.html/. Accessed 7 June 2024. 
+\vspace{5pt}
+
+\noindent{}\footnotesize {\it{\textbf{Introduction to Node.js}}}. OpenJS Foundation, https://nodejs.org/en/learn/getting-started/introduction-to-nodejs/. Accessed 7 June 2024. 
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%  LocalWords:  endnotes includegraphics fread ptr nobj noindent
+%%  LocalWords:  pdflatex acks

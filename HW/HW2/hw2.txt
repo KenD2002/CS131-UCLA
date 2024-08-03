@@ -1,0 +1,59 @@
+I implemented my make_matcher function with two help functions check_nonterm_3
+and check_rule_3, which are mutually recursive. These two functions checks the
+prefix of the fragment and pass the rest of the fragment (suffix) to acceptor.
+When given the first symbol, which is non-terminal, check_nonterm_3 checks 
+whether the list of rules with lhs = this symbol is empty or not. If empty, 
+then the matching fails, as this non-terminal cannot go on. If non-empty list,
+then we check this list element-wise to find a match. After a match is found,
+the acceptor is employed to the rest of the fragment.
+
+My make_parser is based on my make_matcher, where the functions 
+check_nonterm_4 and check_rule_4 are quite similar to the ones in 
+Question 3. But unlike Q3, the check_nonterm_4 function need to know
+what type the symbol is, and thus I added a nonterminal argument.
+Also, it need to return a list of rules (which is in order) we applied
+to build a parse tree. So a list rules_applied is also added to keep
+track of them. Then since we want a full parse tree, the final status,
+where all tokens in the fragment should be used, the rest should be empty,
+and that's why the acceptor is set to empty_acceptor to check it.
+Then, we can use top-down method to build the tree. This make_rules returns 
+a list of rules we applied. 
+in each rule of this list, if the rhs of this list is not all terminal symbols,
+it would expand from the left-most nonterminal symbol as the next element in 
+this list. e.g. make_rules awkish_grammar ["3"; "+" ; "2"; "+"; "1"] returns
+Some
+ [(Expr, [N Term; N Binop; N Expr]);  root expand
+  (Term, [N Num]);                    the left-most nonTerm N Term expand
+  (Num, [T "3"]);                     continue expand
+  (Binop, [T "+"]);                   then the second nonTerm N Binop expand
+  (Expr, [N Term; N Binop; N Expr]);  then the final nonterm N Expr expand into
+                                        a new [N Term; N Binop; N Expr]
+  (Term, [N Num]);                    the left-most nonTerm N Term expand
+  (Num, [T "2"]);                     continue expand
+  (Binop, [T "+"]);                   then the second nonTerm N Binop expand
+  (Expr, [N Term]);                   then the final nonterm N Expr expand
+  (Term, [N Num]);                    continue expand
+  (Num, [T "1"])]                     continue expand
+
+Then, as this list is in order, we can use another pair of mutually recursive
+functions build_node and build_subtree to build the parse tree. Specifically,
+build_node iterate through the symbol list, where these symbols are at the same
+level of the tree, so they are the direct children of the same node. Then, for 
+each symbol, we check if it is terminal or nonterminal, and thus construct the
+subtree from it accordingly. This is feasible because the rules applied are in 
+the order. Finally, we use make_parser as a wrapper for build_node to yield the
+final well-formatted parse tree.
+
+There are some weak parts in my program.
+1. Some of the functions are not exhaustive, so they only works properly if the
+   input is proper. For instance, the check_rule_3 and check_rule_4 are not 
+   exhaustive, as a warning indicates:
+   "match rules_nonterm_sym with | [] -> acceptor frag | _ -> ..." does not
+   considers []. But this is quite weird, since I actually matched [].
+2. My make_matcher and make_parser can only check frag from left to right. So
+   there is one of the situations that my code would not work:
+     Some grammar that is not strictly expanding from left to right, e.g. 
+        [...Expr, [N Expr; T "What?"];
+            Expr, [T "Why?"; T "Who?"]]
+     Here my program would stuck at getting further and further at expanding
+     Expr to [N Expr; T "What?"], causing an infinite loop.

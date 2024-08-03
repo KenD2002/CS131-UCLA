@@ -1,0 +1,40 @@
+Q4
+    pattern matched a for h::t and then used List.append h (set_all_union t) to extract h from
+    it and append it to the returned list
+
+Q6
+    checks if x == f(x), if so then return x. Elsewise we let x <- f(x) and repeat
+
+Q7
+    I originally don't want to make any help function, but I found it is really hard to express
+    f^p (x) in its body. Thus, I made a help function apply_n_times for f^n (x), then similar to Q6
+
+Q9
+    7 helper functions:
+
+    is_symbol_terminable checks if a symbol is of type T, or if symbol is already contained
+        in the terminable_symbols
+
+    is_rhs_all_terminable checks if the right hand side only contains terminable symbols, and 
+        return true if so, false otherwise
+
+    construct_terminable_symbol_list checks the element of rules (each rule) one-by-one and 
+        see if its rhs only contains terminable symbols. If so, then append this rule's symbol
+        on the lhs into terminable_symbol_list, and move on to the next rule. If not, then do 
+        nothing  and move on to the next rule
+
+    rules_with_terminable_symbol_list attaches the terminable symbol lists to the rules and 
+        form a tuple for computed_fixed_point to use as its f, where the input and output types 
+        are the same
+
+    equal_terminable_symbols compares x and f(x) for computed_fixed_point's eq argument
+
+    final_terminable_symbol_list gets all the terminable symbols
+
+    remove_bad_rules checks rule by rule and see if its rhs only contains terminable symbols.
+        If not, then a blind alley would occur, and we have to remove this rule
+    
+
+
+    Then, filter_blind_alleys matches g to get its rules, and we get all the terminable symbols
+        in this grammar, and then we remove all the bad rules that may cause blind alley
